@@ -28,9 +28,9 @@ NumericVector get_BF(int cov_to_drop, DataFrame data, bool replace, List covs) {
      * How to represent $missing (0/1)
      */
     for(int i = 0; i != data.nrows(); ++i) {
-      if(treatedVect.at(i) == 0 && !missingDataVect.at(i)) {
+      if(treatedVect[i] == 0 && !missingDataVect[i] ){
         n_control++;
-      } else if (treatedVect.at(i) == 1 && !missingDataVect.at(i)) {
+      } else if (treatedVect[i] == 1 && !missingDataVect[i]) {
         n_treated++;
       }
     }
@@ -42,19 +42,36 @@ NumericVector get_BF(int cov_to_drop, DataFrame data, bool replace, List covs) {
     int n_treated = 0;
 
     for(int i = 0; i != data.nrows(); ++i) {
-      if(treatedVect.at(i) == 0
-           && !matchedDataVect.at(i)
-           && !missingDataVect.at(i)) {
+      if(treatedVect[i] == 0
+           && !matchedDataVect[i]
+           && !missingDataVect[i]) {
         n_control++;
-      } else if (treatedVect.at(i) == 1
-                   && !matchedDataVect.at(i)
-                   && !missingDataVect.at(i)) {
+      } else if (treatedVect[i] == 1
+                   && !matchedDataVect[i]
+                   && !missingDataVect[i]) {
         n_treated++;
       }
     }
   }
 
-  return NumericVector
+  //Find out deleting rows (manipulation in general of dataframes).
+
+  if (replace) {
+
+    for(DataFrame::iterator i = data.begin(); i != data.end(); ++i) {
+
+    }
+    data[!data$missing, ]   , setdiff(covs, cov_to_drop)
+
+    Function f("bit_match");
+    int match_index =
+      bit_match()$match_index
+    units_matched <- which(!data$missing)[match_index]
+  }
+
+  NumericVector v  = NumericVector::create(1,3,2);
+
+  return v;
 }
 
 
