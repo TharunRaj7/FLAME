@@ -56,7 +56,7 @@ The outcome must be numeric, either binary or continuous. FLAME focuses on binar
 
 From here, we can run FLAME with its default parameters. This will match units on the covariates -- here, `X1`, `X2`, `X3`, `X4`, `X5` -- and output information about the matches that were made.
 ```{r}
-FLAME_out <- FLAME(data = data, holdout = holdout)
+FLAME_out <- FLAME(data = data, holdout = holdout, )
 ```
 
 By default, `FLAME` returns a list with 6 entries:
@@ -77,13 +77,13 @@ matched_data <- dplyr::filter(FLAME_out$data, matched)
 
 4. Units that were not matched on all covariates, will have a \* in place of their covariate value for all covariates for which they were not matched. 
 ```{r}
-head(FLAME_out$data)
+FLAME_out$data
 ```
 The above, for example, implies that while unit 2 was matched to units that also had values (`X1`, `X2`, `X3`, `X4`, `X5`) = (0, 0, 0, 0, 0), unit 1 was matched to units that shared values of (`X1`, `X2`, `X3`) = (1, 1, 0), but that differed in their values of `X4` and `X5`. Units 3 and 5 were not matched at all.
 
 The second, `MGs` is a list, each entry of which contains the units in a single matched group. 
 ```{r}
-FLAME_out$MGs[[1]]
+FLAME_out$MGs
 length(FLAME_out$MGs)
 ```
 That is, units 2, 58, 60, 75, and 95 were all matched together and there are 19 matched groups total. 
@@ -95,7 +95,7 @@ FLAME_out$CATE[1]
 
 The fourth, `matched_on`, is a list also corresponding to `MGs` that gives the covariates, and their values, on which units in each matched group were matched. 
 ```{r}
-FLAME_out$matched_on[[1]]
+FLAME_out$matched_on
 ```
 The above shows that each of the units in the first matched group had covariate values (`X1`, `X2`, `X3`, `X4`, `X5`) = (0, 0, 0, 0, 0). For matched groups not formed on all covariates, some of these entries will be missing:
 ```{r}

@@ -37,10 +37,13 @@ Imports:
   rlang,
   tidyr,
   xgboost,
-  devtools
-RoxygenNote: 7.0.2
+  devtools,
+  Rcpp
+RoxygenNote: 7.1.0
 Suggests: 
     testthat,
     knitr,
     rmarkdown
 VignetteBuilder: knitr
+LinkingTo: 
+    Rcpp

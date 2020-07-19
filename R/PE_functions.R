@@ -61,8 +61,9 @@ setup_preds <- function(holdout, covs, cov_to_drop) {
   Y_treat <- holdout$outcome[holdout$treated == 1]
   Y_control <- holdout$outcome[holdout$treated == 0]
 
+  #covs_treatTest <- holdout[holdout$treated == 1, unlist(c(covs_to_test, n_cols - 1))]
+  #print(covs_treatTest)
   covs_treat <- holdout[holdout$treated == 1, c(covs_to_test, n_cols - 1)]
-
   X_treat <- model.matrix(outcome ~ ., covs_treat)
 
   covs_control <- holdout[holdout$treated == 0, c(covs_to_test, n_cols - 1)]
@@ -77,7 +78,13 @@ setup_preds <- function(holdout, covs, cov_to_drop) {
 
 get_error <- function(X, Y, fit_fun, predict_fun, fit_params, predict_params) {
   fit <- do.call(fit_fun, c(list(X, Y), fit_params))
+  # print("In get_error, fit_fun: ")
+  # print(fit_fun)
+  # print("fit works")
+  # print("In get_error, predict_fun: ")
+  # print(predict_fun)
   preds <- do.call(predict_fun, c(list(fit, X), predict_params))
+  # print("preds work")
   error <- mean((preds - Y) ^ 2) # MSE for continuous outcome; MCE for binary
   return(error)
 }
@@ -87,7 +94,6 @@ predict_master <-
            PE_fit, PE_predict, PE_fit_params, PE_predict_params) {
 
   n_imputations <- length(holdout) # List of dataframes
-
   PE <- vector(mode = 'numeric', length = n_imputations)
   for (i in 1:n_imputations) {
     setup_out <- setup_preds(holdout[[i]], covs, cov_to_drop)

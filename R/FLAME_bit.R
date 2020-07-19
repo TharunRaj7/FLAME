@@ -64,7 +64,6 @@ make_MGs <-
   MGs <- vector('list', length = n_MGs)
   CATEs <- vector('numeric', length = n_MGs)
   matched_on <- vector('list', length = n_MGs)
-
   for (i in 1:n_MGs) {
     members <- matched_units[which(index == unique_MGs[i])]
     MGs[[i]] <- members
@@ -129,98 +128,115 @@ process_matches <-
               made_matches = made_matches))
 }
 
-get_PE <- function(cov_to_drop, covs, holdout, PE_method,
-                   user_PE_fit, user_PE_fit_params,
-                   user_PE_predict, user_PE_predict_params) {
+# get_PE <- function(cov_to_drop, covs, holdout, PE_method,
+#                    user_PE_fit, user_PE_fit_params,
+#                    user_PE_predict, user_PE_predict_params) {
+#   if (!is.null(user_PE_fit)) {
+#     PE_fit <- user_PE_fit
+#     PE_fit_params <- user_PE_fit_params
+#   }
+#   else {
+#     if (PE_method == 'ridge') {
+#       PE_fit <- glmnet::cv.glmnet
+#       if (length(unique(holdout$outcome)) == 2) {
+#         family <- 'binomial'
+#       }
+#       else {
+#         family <- 'gaussian'
+#       }
+#       PE_fit_params <- list(family = family, nfolds = 5)
+#     }
+#     else if (PE_method == 'xgb') {
+#       PE_fit <- cv_xgboost
+#       PE_fit_params <- list()
+#     }
+#     else {
+#       stop('PE_method not recognized.
+#            To supply your own function, use user_PE_fit and user_PE_predict')
+#     }
+#   }
+#
+#   if (!is.null(user_PE_predict)) {
+#     PE_predict <- user_PE_predict
+#     PE_predict_params <- user_PE_predict_params
+#   }
+#   else {
+#     PE_predict <- predict
+#     PE_predict_params <- list()
+#   }
+#
+#   PE <- predict_master(holdout, covs, cov_to_drop,
+#                        PE_fit, PE_predict, PE_fit_params, PE_predict_params)
+#   #browser()
+#   #print(PE)
+#   return(PE)
+# }
 
-  if (!is.null(user_PE_fit)) {
-    PE_fit <- user_PE_fit
-    PE_fit_params <- user_PE_fit_params
-  }
-  else {
-    if (PE_method == 'ridge') {
-      PE_fit <- glmnet::cv.glmnet
-      if (length(unique(holdout$outcome)) == 2) {
-        family <- 'binomial'
-      }
-      else {
-        family <- 'gaussian'
-      }
-      PE_fit_params <- list(family = family, nfolds = 5)
-    }
-    else if (PE_method == 'xgb') {
-      PE_fit <- cv_xgboost
-      PE_fit_params <- list()
-    }
-    else {
-      stop('PE_method not recognized.
-           To supply your own function, use user_PE_fit and user_PE_predict')
-    }
-  }
-
-  if (!is.null(user_PE_predict)) {
-    PE_predict <- user_PE_predict
-    PE_predict_params <- user_PE_predict_params
-  }
-  else {
-    PE_predict <- predict
-    PE_predict_params <- list()
-  }
-
-  PE <- predict_master(holdout, covs, cov_to_drop,
-                       PE_fit, PE_predict, PE_fit_params, PE_predict_params)
-  return(PE)
-}
-
-get_BF <- function(cov_to_drop, data, replace, covs) {
-
-  # Calculate number of units eligible to be matched
-  if (replace) {
-    n_control <- sum(data$treated[!data$missing] == 0)
-    n_treated <- sum(data$treated[!data$missing] == 1)
-  }
-  else {
-    n_control <- sum(data$treated[!data$matched & !data$missing] == 0)
-    n_treated <- sum(data$treated[!data$matched & !data$missing] == 1)
-  }
-
+matching <- function(cov_to_drop, data, replace, covs) {
   if (replace) {
     match_index <-
-      bit_match(data[!data$missing, ], setdiff(covs, cov_to_drop))$match_index
+      bit_match(data[!unlist(data$missing), ], setdiff(covs, cov_to_drop))$match_index
     units_matched <- which(!data$missing)[match_index]
   }
   else {
+    data_step <- data[!unlist(data$matched),]
+    data_step <- data_step[!unlist(data_step$missing), ]
     match_index <-
-      bit_match(data[!data$matched & !data$missing, ],
-                         setdiff(covs, cov_to_drop))$match_index
+      bit_match(data_step, setdiff(covs, cov_to_drop))$match_index
     units_matched <- which(!data$matched & !data$missing)[match_index]
   }
-
-  # Newly matched
-  n_control_matched <- sum(data$treated[units_matched] == 0)
-  n_treated_matched <- sum(data$treated[units_matched] == 1)
-
-  # All matched units; for stopping rule purposes
-  all_unmatched <-
-    setdiff(1:nrow(data), union(units_matched, which(data$matched)))
-
-  n_control_unmatched <- sum(all_unmatched %in% which(data$treated == 0))
-  n_treated_unmatched <- sum(all_unmatched %in% which(data$treated == 1))
-
-  prop_control_unmatched <- n_control_unmatched / n_control
-  prop_treated_unmatched <- n_treated_unmatched / n_treated
-
-  # Is this if_else really necessary? We should catch it earlier
-  BF <- dplyr::if_else(n_control == 0 | n_treated == 0,
-                0,
-                n_control_matched / n_control +
-                  n_treated_matched / n_treated)
-
-  return(list(BF = BF,
-              prop_unmatched =
-                list(control = prop_control_unmatched,
-                     treated = prop_treated_unmatched)))
+  return (list(match_index = match_index, units_matched = units_matched))
 }
+
+
+# get_BF <- function(cov_to_drop, data, replace, covs) {
+#   # Calculate number of units eligible to be matched
+#   if (replace) {
+#     n_control <- sum(data$treated[!data$missing] == 0)
+#     n_treated <- sum(data$treated[!data$missing] == 1)
+#   }
+#   else {
+#     n_control <- sum(data$treated[!data$matched & !data$missing] == 0)
+#     n_treated <- sum(data$treated[!data$matched & !data$missing] == 1)
+#   }
+#
+#   if (replace) {
+#     match_index <-
+#       bit_match(data[!data$missing, ], setdiff(covs, cov_to_drop))$match_index
+#     units_matched <- which(!data$missing)[match_index]
+#   }
+#   else {
+#     match_index <-
+#       bit_match(data[!data$matched & !data$missing, ],
+#                          setdiff(covs, cov_to_drop))$match_index
+#     units_matched <- which(!data$matched & !data$missing)[match_index]
+#   }
+#
+#   # Newly matched
+#   n_control_matched <- sum(data$treated[units_matched] == 0)
+#   n_treated_matched <- sum(data$treated[units_matched] == 1)
+#
+#   # All matched units; for stopping rule purposes
+#   all_unmatched <-
+#     setdiff(1:nrow(data), union(units_matched, which(data$matched)))
+#
+#   n_control_unmatched <- sum(all_unmatched %in% which(data$treated == 0))
+#   n_treated_unmatched <- sum(all_unmatched %in% which(data$treated == 1))
+#
+#   prop_control_unmatched <- n_control_unmatched / n_control
+#   prop_treated_unmatched <- n_treated_unmatched / n_treated
+#
+#   # Is this if_else really necessary? We should catch it earlier
+#   BF <- dplyr::if_else(n_control == 0 | n_treated == 0,
+#                 0,
+#                 n_control_matched / n_control +
+#                   n_treated_matched / n_treated)
+#
+#   return(list(BF = BF,
+#               prop_unmatched =
+#                 list(control = prop_control_unmatched,
+#                      treated = prop_treated_unmatched)))
+# }
 
 #' Bit Vectors Implementation of FLAME
 #'
@@ -550,7 +566,6 @@ FLAME_internal <-
            early_stop_iterations, early_stop_epsilon,
            early_stop_control, early_stop_treated,
            early_stop_pe, early_stop_bf, mapping) {
-
   # The lines after processed_matches suggest these several lines should be removed.
   #   To do.
   # List of MGs, each entry contains the corresponding MG's entries
@@ -584,7 +599,8 @@ FLAME_internal <-
   store_bf <- NULL
 
   # Predictive error using all covariates. Used for stopping condition.
-  baseline_PE <- get_PE(cov_to_drop = NULL, covs, holdout,
+ #Made a change here
+  baseline_PE <- get_PE(cov_to_drop = 0, covs, holdout,
                         PE_method, user_PE_fit, user_PE_fit_params,
                         user_PE_predict, user_PE_predict_params)
 
@@ -593,7 +609,6 @@ FLAME_internal <-
     iter <- iter + 1
     # Progress messages
     show_progress(verbose, iter, data)
-
     # Compute the PE associated with dropping each covariate
     PE <- sapply(covs, get_PE, covs, holdout,
                  PE_method, user_PE_fit, user_PE_fit_params,
